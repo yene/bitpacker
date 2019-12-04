@@ -3,21 +3,20 @@
 A small package that uses custom types to pack a byte.
 
 ```go
-	// | Flag 1bit | HeaderLength 3bit | Data 4bit |
-	type BitStruct struct {
-		Flag         bitpacker.Uint1
-		HeaderLength bitpacker.Uint3
-		Data         bitpacker.Uint4
-	}
+// | Flag 1bit | HeaderLength 3bit | Data 4bit |
+type BitStruct struct {
+	Flag         bitpacker.Uint1
+	HeaderLength bitpacker.Uint3
+	Data         bitpacker.Uint4
+}
 
-	x := BitStruct{1, 2, 255}
-	number := bitpacker.Pack(x)
-	fmt.Printf("%08b\n", number)
+x := BitStruct{1, 2, 255}
+number := bitpacker.Pack(x)
+fmt.Printf("%08b\n", number)
 
-	var y BitStruct
-	bitpacker.Unpack(&y, number)
-	fmt.Println(y)
-
+var y BitStruct
+bitpacker.Unpack(&y, number)
+fmt.Println(y)
 ```
 
 Will result in
