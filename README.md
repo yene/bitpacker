@@ -23,7 +23,7 @@ A small package that uses custom types to pack a byte.
 Will result in
 
 ```
-Warning: uint4 contains a number higher than what can be encoded, number will be reduced to 4 bits.
+Warning: Uint4 contains a number higher than what can be encoded, number will be reduced to 4 bits.
 10101111
 {1 2 15}
 

@@ -143,43 +143,43 @@ func intForType(t interface{}) uint8 {
 		return uint8(bool2int(v))
 	case Uint1:
 		if v > 1 && PrintWarnings {
-			fmt.Println("Warning: uint1 contains a number higher than what will be encoded, number will be reduced to 1 bit.")
+			fmt.Println("Warning: Uint1 contains a number higher than what will be encoded, number will be reduced to 1 bit.")
 		}
 		v = v & 0b00000001
 		return uint8(v)
 	case Uint2:
 		if v > 3 && PrintWarnings {
-			fmt.Println("Warning: uint2 contains a number higher than what can be encoded, number will be reduced to 2 bits.")
+			fmt.Println("Warning: Uint2 contains a number higher than what can be encoded, number will be reduced to 2 bits.")
 		}
 		v = v & 0b00000011
 		return uint8(v)
 	case Uint3:
 		if v > 7 && PrintWarnings {
-			fmt.Println("Warning: uint3 contains a number higher than what can be encoded, number will be reduced to 3 bits.")
+			fmt.Println("Warning: Uint3 contains a number higher than what can be encoded, number will be reduced to 3 bits.")
 		}
 		v = v & 0b00000111
 		return uint8(v)
 	case Uint4:
 		if v > 15 && PrintWarnings {
-			fmt.Println("Warning: uint4 contains a number higher than what can be encoded, number will be reduced to 4 bits.")
+			fmt.Println("Warning: Uint4 contains a number higher than what can be encoded, number will be reduced to 4 bits.")
 		}
 		v = v & 0b00001111
 		return uint8(v)
 	case Uint5:
 		if v > 31 && PrintWarnings {
-			fmt.Println("Warning: uint5 contains a number higher than what can be encoded, number will be reduced to 5 bits.")
+			fmt.Println("Warning: Uint5 contains a number higher than what can be encoded, number will be reduced to 5 bits.")
 		}
 		v = v & 0b00011111
 		return uint8(v)
 	case Uint6:
 		if v >= 63 && PrintWarnings {
-			fmt.Println("Warning: uint6 contains a number higher than what can be encoded, number will be reduced to 6 bits.")
+			fmt.Println("Warning: Uint6 contains a number higher than what can be encoded, number will be reduced to 6 bits.")
 		}
 		v = v & 0b00111111
 		return uint8(v)
 	case Uint7:
 		if v > 127 && PrintWarnings {
-			fmt.Println("Warning: uint7 contains a number higher than what can be encoded, number will be reduced to 7 bits.")
+			fmt.Println("Warning: Uint7 contains a number higher than what can be encoded, number will be reduced to 7 bits.")
 		}
 		v = v & 0b01111111
 		return uint8(v)
