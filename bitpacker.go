@@ -13,8 +13,12 @@ func PackByte(x interface{}) uint8 {
 
 // Pack turns a struct with a total sum of 8 bits into a uint8, which can be used to write into a buffer.
 func Pack(x interface{}, structSize int) uint {
-	// TODO: check if .Elem() is appropriate here, and forcing the user to pass in a pointer, see json marshal
 	v := reflect.ValueOf(x)
+
+	if v.Kind() == reflect.Ptr { // Handle pointer to a struct
+		v = v.Elem()
+	}
+
 	if v.Kind() != reflect.Struct {
 		panic("Pack expected a struct")
 	}

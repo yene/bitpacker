@@ -64,6 +64,27 @@ func TestBasicPackUnpack(t *testing.T) {
 	}
 }
 
+func TestPointerStruct(t *testing.T) {
+	type BitStruct struct {
+		Flag         int `uint1`
+		HeaderLength int `uint3`
+		Data         int `uint4`
+	}
+
+	x := &BitStruct{1, 2, 255}
+	number := bitpacker.PackByte(x)
+	var y BitStruct
+	bitpacker.Unpack(&y, number)
+	if y.Flag != 1 || y.HeaderLength != 2 || y.Data != 15 {
+		t.Errorf("Unpacked data did not match.")
+	}
+}
+
+/*
+func TestNilStruct(t *testing.T) {
+	bitpacker.PackByte(nil)
+}*/
+
 func TestBool(t *testing.T) {
 	type BitStruct struct {
 		Flag         bool
