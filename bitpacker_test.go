@@ -8,9 +8,9 @@ import (
 
 func TestBasicPackUnpack(t *testing.T) {
 	type BitStruct struct {
-		Flag         bitpacker.Uint1
-		HeaderLength bitpacker.Uint3
-		Data         bitpacker.Uint4
+		Flag         int `uint1`
+		HeaderLength int `uint3`
+		Data         int `uint4`
 	}
 
 	x := BitStruct{1, 2, 255}
@@ -25,8 +25,8 @@ func TestBasicPackUnpack(t *testing.T) {
 func TestBool(t *testing.T) {
 	type BitStruct struct {
 		Flag         bool
-		HeaderLength bitpacker.Uint3
-		Data         bitpacker.Uint4
+		HeaderLength int `uint3`
+		Data         int `uint4`
 	}
 
 	x := BitStruct{true, 2, 15}

@@ -11,13 +11,13 @@ import (
 func main() {
 	// | Flag 1bit | HeaderLength 3bit | Data 4bit |
 	type BitStruct struct {
-		Flag         bitpacker.Uint1
-		HeaderLength bitpacker.Uint3
-		Data         bitpacker.Uint4
+		Flag         uint  `uint1`
+		HeaderLength uint8 `uint3`
+		Data         int   `uint4`
 	}
 
 	x := BitStruct{1, 2, 255}
-	number := bitpacker.Pack(x)
+	number := bitpacker.PackByte(x)
 	fmt.Printf("%08b\n", number)
 
 	var y BitStruct

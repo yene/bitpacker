@@ -5,45 +5,58 @@ import (
 	"reflect"
 )
 
-// PrintWarnings uses the fmt package, if you want to slimm down remove the warnings.
-var PrintWarnings = true
-
-// Types to represent bits, in reality they are still store in a byte.
-// you can use Uint1 or bool to represent 1 bit
-
-type Uint1 uint8
-type Uint2 uint8
-type Uint3 uint8
-type Uint4 uint8
-type Uint5 uint8
-type Uint6 uint8
-type Uint7 uint8
+// PackByte turns a struct with a total sum of 8 bits into a uint8, which can be used to write into a buffer.
+func PackByte(x interface{}) uint8 {
+	res := Pack(x, 8)
+	return uint8(res)
+}
 
 // Pack turns a struct with a total sum of 8 bits into a uint8, which can be used to write into a buffer.
-func Pack(x interface{}) uint8 {
+func Pack(x interface{}, structSize int) uint {
+	// TODO: check if .Elem() is appropriate here, and forcing the user to pass in a pointer, see json marshal
 	v := reflect.ValueOf(x)
 	if v.Kind() != reflect.Struct {
 		panic("Pack expected a struct")
 	}
 
-	typeOfT := v.Type()
 	bitPosition := 0
-	var number uint8
+	var number uint
 	for i := 0; i < v.NumField(); i++ {
-		f := v.Field(i)
-		bc := bitCountForType(f.Interface())
-		if bc == 0 {
-			s := fmt.Sprintf("Found invalid type %s (field %s) in struct. PLease use the exported types.", f.Type(), typeOfT.Field(i).Name)
-			panic(s)
+		valueField := v.Field(i)
+		typeField := v.Type().Field(i)
+		tag := typeField.Tag
+		// TODO: allow bool
+		if valueField.Kind() != reflect.Int && valueField.Kind() != reflect.Uint && valueField.Kind() != reflect.Uint8 && valueField.Kind() != reflect.Uint16 && valueField.Kind() != reflect.Uint32 && valueField.Kind() != reflect.Uint64 {
+			e := fmt.Sprintf("Expected: \"%s\" to be a number type.\n", typeField.Name)
+			panic(e)
 		}
-		if bitPosition+bc > 8 {
+
+		// fmt.Printf("Field Name: %s,\t Field Value: %v,\t Tag Value: %s\n", typeField.Name, valueField.Interface(), tag)
+		bc := bitCountForTag(tag)
+		if bc == 0 {
+			e := fmt.Sprintf("Field: \"%s\", has an invalid Tag: \"%s\"\n", typeField.Name, tag)
+			panic(e)
+		}
+
+		if bitPosition+bc > structSize {
 			panic("The provided bit struct is bigger than 8bit.")
 		}
-		value := intForType(f.Interface())
-		number |= value << (8 - bc - bitPosition)
+
+		// convert any number type to uint8
+		var intValue uint = 0
+		if v, ok := valueField.Interface().(int); ok {
+			intValue = uint(v)
+		}
+		if v, ok := valueField.Interface().(uint); ok {
+			intValue = uint(v)
+		}
+		if v, ok := valueField.Interface().(uint8); ok {
+			intValue = uint(v)
+		}
+		intValue = ensureWidthFor(intValue, bc)
+
+		number |= intValue << (8 - bc - bitPosition)
 		bitPosition = bitPosition + bc
-		//fmt.Printf("%08b\n", value)
-		//fmt.Printf("%d: %s %s = %v\n", i, typeOfT.Field(i).Name, f.Type(), f.Interface())
 	}
 	return number
 }
@@ -59,133 +72,103 @@ func Unpack(x interface{}, data uint8) {
 		panic("Unpack expected a pointer to a struct")
 	}
 
-	typeOfT := v.Type()
 	bitPosition := 0
 	for i := 0; i < v.NumField(); i++ {
-		f := v.Field(i)
-		bc := bitCountForType(f.Interface())
+		valueField := v.Field(i)
+		typeField := v.Type().Field(i)
+		tag := typeField.Tag
+		bc := bitCountForTag(tag)
 		if bc == 0 {
-			s := fmt.Sprintf("Found invalid type %s (field %s) in struct. PLease use the exported types.", f.Type(), typeOfT.Field(i).Name)
-			panic(s)
+			e := fmt.Sprintf("Field: \"%s\", has an invalid Tag: \"%s\"\n", typeField.Name, tag)
+			panic(e)
 		}
-		if bitPosition+bc > 8 {
+		/* TODO: do we need to validate this?
+		if bitPosition+bc > structSize {
 			panic("The provided bit struct is bigger than 8bit.")
-		}
+		}*/
 		rightAlign := data >> (8 - (bc + bitPosition))
-		numberWithType := valueForType(f.Interface(), rightAlign)
-		f.Set(numberWithType)
+		numberWithUint := ensureWidthFor(uint(rightAlign), bc)
+		reflectValue := convertValueToType(valueField.Interface(), numberWithUint)
+		valueField.Set(reflectValue)
 		bitPosition = bitPosition + bc
 	}
 
 }
 
-func bitCountForType(t interface{}) int {
-	switch t.(type) {
-	case bool:
+func bitCountForTag(tag reflect.StructTag) int {
+	switch tag {
+	case "bool":
 		return 1
-	case Uint1:
+	case "uint1":
 		return 1
-	case Uint2:
+	case "uint2":
 		return 2
-	case Uint3:
+	case "uint3":
 		return 3
-	case Uint4:
+	case "uint4":
 		return 4
-	case Uint5:
+	case "uint5":
 		return 5
-	case Uint6:
+	case "uint6":
 		return 6
-	case Uint7:
+	case "uint7":
 		return 7
 	default:
 		return 0
 	}
 }
 
-func valueForType(t interface{}, v uint8) reflect.Value {
+func convertValueToType(t interface{}, v uint) reflect.Value {
 	switch t.(type) {
 	case bool:
-		v = v & 0b00000001
 		if v == 1 {
 			return reflect.ValueOf(true)
 		}
 		return reflect.ValueOf(false)
-	case Uint1:
-		v = v & 0b00000001
-		return reflect.ValueOf(Uint1(v))
-	case Uint2:
-		v = v & 0b00000011
-		return reflect.ValueOf(Uint2(v))
-	case Uint3:
-		v = v & 0b00000111
-		return reflect.ValueOf(Uint3(v))
-	case Uint4:
-		v = v & 0b00001111
-		return reflect.ValueOf(Uint4(v))
-	case Uint5:
-		v = v & 0b00011111
-		return reflect.ValueOf(Uint5(v))
-	case Uint6:
-		v = v & 0b00111111
-		return reflect.ValueOf(Uint6(v))
-	case Uint7:
-		v = v & 0b01111111
-		return reflect.ValueOf(Uint7(v))
+	case int:
+		return reflect.ValueOf(int(v))
+	case uint:
+		return reflect.ValueOf(uint(v))
+	case uint8:
+		return reflect.ValueOf(uint8(v))
+	case uint16:
+		return reflect.ValueOf(uint16(v))
+	case uint32:
+		return reflect.ValueOf(uint32(v))
+	case uint64:
+		return reflect.ValueOf(uint64(v))
 	default:
-		fmt.Println("Did not handle type:", reflect.TypeOf(v))
+		fmt.Println("Did not handle type:", t)
 		return reflect.ValueOf(t)
 	}
 }
 
-func intForType(t interface{}) uint8 {
-	switch v := t.(type) {
-	case bool:
-		return uint8(bool2int(v))
-	case Uint1:
-		if v > 1 && PrintWarnings {
-			fmt.Println("Warning: Uint1 contains a number higher than what will be encoded, number will be reduced to 1 bit.")
-		}
+func ensureWidthFor(v uint, width int) uint {
+	switch width {
+	case 1:
 		v = v & 0b00000001
-		return uint8(v)
-	case Uint2:
-		if v > 3 && PrintWarnings {
-			fmt.Println("Warning: Uint2 contains a number higher than what can be encoded, number will be reduced to 2 bits.")
-		}
+		return v
+	case 2:
 		v = v & 0b00000011
-		return uint8(v)
-	case Uint3:
-		if v > 7 && PrintWarnings {
-			fmt.Println("Warning: Uint3 contains a number higher than what can be encoded, number will be reduced to 3 bits.")
-		}
+		return v
+	case 3:
 		v = v & 0b00000111
-		return uint8(v)
-	case Uint4:
-		if v > 15 && PrintWarnings {
-			fmt.Println("Warning: Uint4 contains a number higher than what can be encoded, number will be reduced to 4 bits.")
-		}
+		return v
+	case 4:
 		v = v & 0b00001111
-		return uint8(v)
-	case Uint5:
-		if v > 31 && PrintWarnings {
-			fmt.Println("Warning: Uint5 contains a number higher than what can be encoded, number will be reduced to 5 bits.")
-		}
+		return v
+	case 5:
 		v = v & 0b00011111
-		return uint8(v)
-	case Uint6:
-		if v >= 63 && PrintWarnings {
-			fmt.Println("Warning: Uint6 contains a number higher than what can be encoded, number will be reduced to 6 bits.")
-		}
+		return v
+	case 6:
 		v = v & 0b00111111
-		return uint8(v)
-	case Uint7:
-		if v > 127 && PrintWarnings {
-			fmt.Println("Warning: Uint7 contains a number higher than what can be encoded, number will be reduced to 7 bits.")
-		}
+		return v
+	case 7:
 		v = v & 0b01111111
-		return uint8(v)
+		return v
 	default:
-		fmt.Println("Did not handle type:", reflect.TypeOf(v))
-		return 0
+		fmt.Println("ensureWidthFor not handle wdith:", width)
+		return v
 	}
 }
 
