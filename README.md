@@ -11,11 +11,11 @@ type BitStruct struct {
 }
 
 x := BitStruct{1, 2, 255}
-number := bitpacker.Pack(x)
+number := bitpacker.PackByte(x)
 fmt.Printf("%08b\n", number)
 
 var y BitStruct
-bitpacker.Unpack(&y, number)
+bitpacker.UnpackByte(&y, number)
 fmt.Println(y)
 ```
 

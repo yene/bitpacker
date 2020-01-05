@@ -25,14 +25,16 @@ func Pack(x interface{}, structSize int) uint {
 		valueField := v.Field(i)
 		typeField := v.Type().Field(i)
 		tag := typeField.Tag
-		// TODO: allow bool
-		if valueField.Kind() != reflect.Int && valueField.Kind() != reflect.Uint && valueField.Kind() != reflect.Uint8 && valueField.Kind() != reflect.Uint16 && valueField.Kind() != reflect.Uint32 && valueField.Kind() != reflect.Uint64 {
+		if valueField.Kind() != reflect.Bool && valueField.Kind() != reflect.Int && valueField.Kind() != reflect.Uint && valueField.Kind() != reflect.Uint8 && valueField.Kind() != reflect.Uint16 && valueField.Kind() != reflect.Uint32 && valueField.Kind() != reflect.Uint64 {
 			e := fmt.Sprintf("Expected: \"%s\" to be a number type.\n", typeField.Name)
 			panic(e)
 		}
-
 		// fmt.Printf("Field Name: %s,\t Field Value: %v,\t Tag Value: %s\n", typeField.Name, valueField.Interface(), tag)
 		bc := bitCountForTag(tag)
+		// Allowing naked bool
+		if bc == 0 && valueField.Kind() == reflect.Bool {
+			bc = 1
+		}
 		if bc == 0 {
 			e := fmt.Sprintf("Field: \"%s\", has an invalid Tag: \"%s\"\n", typeField.Name, tag)
 			panic(e)
@@ -44,21 +46,18 @@ func Pack(x interface{}, structSize int) uint {
 
 		// convert any number type to uint8
 		var intValue uint = 0
-		if v, ok := valueField.Interface().(int); ok {
-			intValue = uint(v)
-		}
-		if v, ok := valueField.Interface().(uint); ok {
-			intValue = uint(v)
-		}
-		if v, ok := valueField.Interface().(uint8); ok {
-			intValue = uint(v)
-		}
+		intValue = convertNumberToUint(valueField.Interface())
 		intValue = ensureWidthFor(intValue, bc)
 
-		number |= intValue << (8 - bc - bitPosition)
+		number |= intValue << (structSize - bc - bitPosition)
 		bitPosition = bitPosition + bc
 	}
 	return number
+}
+
+// UnpackByte fills the provided struct with bits
+func UnpackByte(x interface{}, data uint8) {
+	Unpack(x, data)
 }
 
 // Unpack fills the provided struct with bits
@@ -78,6 +77,10 @@ func Unpack(x interface{}, data uint8) {
 		typeField := v.Type().Field(i)
 		tag := typeField.Tag
 		bc := bitCountForTag(tag)
+		// Allowing naked bool
+		if bc == 0 && valueField.Kind() == reflect.Bool {
+			bc = 1
+		}
 		if bc == 0 {
 			e := fmt.Sprintf("Field: \"%s\", has an invalid Tag: \"%s\"\n", typeField.Name, tag)
 			panic(e)
@@ -115,6 +118,31 @@ func bitCountForTag(tag reflect.StructTag) int {
 		return 7
 	default:
 		return 0
+	}
+}
+
+func convertNumberToUint(t interface{}) uint {
+	if v, ok := t.(bool); ok {
+		if v == true {
+			return 1
+		}
+		return 0
+	} else if v, ok := t.(int); ok {
+		return uint(v)
+	} else if v, ok := t.(uint); ok {
+		return uint(v)
+	} else if v, ok := t.(uint8); ok {
+		return uint(v)
+	} else if v, ok := t.(uint16); ok {
+		return uint(v)
+	} else if v, ok := t.(uint32); ok {
+		return uint(v)
+	} else if v, ok := t.(uint64); ok {
+		return uint(v)
+	} else {
+		e := fmt.Sprintf("Could not convert interface to uint: %v\n", t)
+		panic(e)
+		// return 0
 	}
 }
 

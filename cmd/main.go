@@ -21,7 +21,7 @@ func main() {
 	fmt.Printf("%08b\n", number)
 
 	var y BitStruct
-	bitpacker.Unpack(&y, number)
+	bitpacker.UnpackByte(&y, number)
 	fmt.Println(y)
 
 	// Write it into a buffer like this:
