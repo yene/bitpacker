@@ -21,17 +21,12 @@ fmt.Println(y)
 
 Will result in
 
-```
-Warning: Uint4 contains a number higher than what can be encoded, number will be reduced to 4 bits.
+```bash
 10101111
-{1 2 15}
-
+{1 2 15} # 255 is silently converted into uint4
 ```
-
-
 
 ## Notes
-* We panic if something is invalid.
-* TODO: Add support for tags.
-* TODO: Add tests. 🤨
+* TODO: Replace panic with return error.
+* TODO: Improve support for custom length.
 * https://github.com/lunixbochs/struc/issues/7
